@@ -1,0 +1,202 @@
+---
+title: "A Replicated Full 2³ Factorial Investigation of Freezing Time"
+subtitle: "Testing the Mpemba Effect"
+author: 
+  - Haowei Fan
+thanks: "Code and data are available at: https://github.com/HaoweiFan0912/mpemba-freezing-experiment.git"
+date: today
+date-format: long
+format: pdf
+toc-depth: 2    
+number-sections: true
+toc: true           
+toc-title: "Table of Contents" 
+---
+
+\newpage
+
+# Introduction
+
+The Mpemba effect refers to the phenomenon in which hot water may freeze faster than cold water under certain specific conditions. This effect was first observed and reported by Tanzanian student Erasto Mpemba in the 1960s. Although the phenomenon is counterintuitive, it has indeed been observed in some experimental studies. Nevertheless, the Mpemba effect remains highly controversial. Some scholars argue that the phenomenon lacks rigorous experimental control, uniform standards, and reproducibility across different studies, raising doubts about its scientific validity. On the other hand, some researchers support the existence of the Mpemba effect under specific conditions, suggesting that the thermodynamic mechanisms behind this effect might provide new insights into the nonequilibrium behavior of quantum systems.
+
+The objective of this experiment is to investigate the scientific validity of the Mpemba effect by comparing differences in freezing times of water at various initial temperatures under constant spatial and temperature conditions. Additionally, two other potential influencing factors—solution density and container material—are included in the experiment to comprehensively examine their main effects on freezing time, as well as possible significant interaction effects among these factors. This allows exploration of whether such interactions are significant and whether they might contribute to the mechanisms underlying the Mpemba effect.
+
+This experiment employs a replicated $2^3$ full factorial experimental design. The three factors, each with two levels, are initial water temperature (room temperature around 17°C vs. hot water at approximately 45°C), solution density (pure water vs. sugar solution with 5 ml sucrose), and container material (glass vs. plastic cup). This results in eight experimental conditions, each replicated twice, totaling sixteen experiments. To minimize nuisance variables, the experiments were conducted in a uniform freezer environment at -17°C. Each trial simultaneously included two cups of water to minimize cross-interference between different temperature conditions. Observations began 1.5 hours after placing the water samples into the freezer, with checks conducted every 5 minutes. The criterion for freezing was the absence of liquid water movement when the cup was gently shaken, upon which the freezing time was recorded.
+
+\newpage
+
+# Data and Methodology
+
+```{r}
+#| echo: false
+#| include: false
+#| warning: false
+#| message: false
+#### Workspace setup ####
+set.seed(912)
+# List of necessary packages
+packages <- c("tidyverse", "knitr", "FrF2")
+# Install missing packages
+missing_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+install.packages(missing_packages)
+# Load packages
+lapply(packages, library, character.only = TRUE)
+
+#### Read data ####
+freeze <- read_csv(here::here("freezing_time_data.csv"))
+```
+
+@tbl-matrix presents the observed data from the replicated $2^3$ full factorial experiment. Each run represents a distinct experimental condition determined by the combination of three factors: Factor A (initial water temperature; -1 for room temperature ~17°C, +1 for hot water ~45°C), Factor B (solution density; -1 for pure water, +1 for sugar solution with 5ml sucrose), and Factor C (container material; -1 for plastic cup, +1 for glass cup). Columns labeled AB, AC, BC, and ABC represent the corresponding interaction terms. The columns $y_1$ and $y_2$ indicate the freezing times (in minutes) recorded for two replicates of each run, and $y_{mean}$ is the average of these two measurements.
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: tbl-matrix
+#| tbl-cap: "Design Matrix and Observed Freezing Times"
+
+# Create a new dataframe named 'matrix' for the full factorial experiment
+matrix <- data.frame(
+  Run = 1:8,
+  A = c(-1,-1,-1,-1, 1, 1, 1, 1),  # Factor A: water temperature (-1: RoomTemp, 1: Hot)
+  B = c(-1,-1, 1, 1,-1,-1, 1, 1),  # Factor B: solution density (-1: NoSugar, 1: Sugar solution)
+  C = c(-1, 1,-1, 1,-1, 1,-1, 1),  # Factor C: cup material (-1: Plastic, 1: Glass)
+  y_1 = freeze$time_1, # Freezing time (minutes) - Replication 1
+  y_2 = freeze$time_2  # Freezing time (minutes) - Replication 2
+)
+
+# Calculate the average of the two replicates within each run
+matrix$y_mean <- (freeze$time_1 + freeze$time_2) / 2
+
+# Compute two-factor and three-factor interactions
+matrix$AB  <- matrix$A * matrix$B
+matrix$AC  <- matrix$A * matrix$C
+matrix$BC  <- matrix$B * matrix$C
+matrix$ABC <- matrix$A * matrix$B * matrix$C
+
+# Rearrange columns to a conventional factorial design layout
+matrix <- matrix[, c("Run", "A", "B", "C", "AB", "AC", "BC", "ABC", "y_1", "y_2", "y_mean")]
+
+kable(matrix)
+```
+
+The factorial effects presented in @tbl-effects were computed from these observed data. First, the effect estimates were obtained by calculating the difference between average responses at the positive (+1) and negative (−1) levels of each factor or interaction:
+$\text{Effect} = \bar{y}_{+} - \bar{y}_{-}$
+where $\bar{y}_{+}$ and $\bar{y}_{-}$ represent the average response for the positive and negative levels of each factorial effect.
+
+Next, the variance of each run was calculated using the two replicated measurements:
+$s^2_{\text{run}} = \frac{(y_1 - y_2)^2}{2}$
+These variances were pooled to estimate the experimental error variance:
+$s^2 = \frac{\sum_{i=1}^{8} s^2_{\text{run}, i}}{8}$
+The standard error (SE) of each effect estimate was calculated as:
+$SE = \frac{s}{2}$
+where $s$ is the square root of the pooled variance $s^2$.
+
+A t-value for testing the null hypothesis $H_0: \text{Effect} = 0$ was then computed:
+$t_{\text{eff}} = \frac{\text{Effect}}{SE}$
+The corresponding p-value was obtained from a two-sided t-test with 8 degrees of freedom:
+$\text{p-value} = 2 \cdot P\left(|t_8| > |t_{\text{eff}}|\right)$
+Finally, the 95% confidence intervals for each factorial effect were calculated as:
+$\text{CI}_{95\%} = \text{Effect} \pm t_{0.975,8} \cdot SE$
+where $t_{0.975,8}$ is the critical t-value at the 95% confidence level with 8 degrees of freedom.
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: tbl-effects
+#| tbl-cap: "Summary of All Main and Interaction Effects"
+
+# Step 1: Compute pooled variance (each run has 2 reps)
+matrix$Var <- ((matrix$y_1 - matrix$y_2)^2) / 2
+s2_pooled <- mean(matrix$Var)          # Pooled variance estimate
+s_pooled <- sqrt(s2_pooled)            # Pooled standard deviation
+
+# Step 2: Compute standard error of effect
+SE_effect <- s_pooled / 2              
+
+# Step 3: Compute effects
+effects <- colSums(matrix[,c("A","B","C","AB","AC","BC","ABC")] * matrix$y_mean) / 4
+
+# Step 4: Compute t-values, p-values, and 95% confidence intervals
+df <- 8                                # Degrees of freedom for t distribution (2 reps × 8 runs)
+t_crit <- qt(0.975, df = df)           # t critical value for 95% CI
+
+# Step 5: Create and round final data frame
+effects_df <- data.frame(
+  Effect = names(effects),
+  Estimate = round(effects, 3),
+  SE = round(rep(SE_effect, length(effects)), 3),
+  t_value = round(effects / SE_effect, 3),
+  p_value = round(2 * pt(-abs(effects / SE_effect), df = df), 3),
+  CI_lower = round(effects - t_crit * SE_effect, 3),
+  CI_upper = round(effects + t_crit * SE_effect, 3)
+)
+
+
+# Display the results
+kable(effects_df, row.names = FALSE)
+```
+
+In addition, to visually observe the main and interaction effects of each factor, a linear model was fitted and a half-normal plot was generated (@fig-halfN)：
+$$
+\hat{y}_{\text{mean}} = \beta_0 + \beta_1 A + \beta_2 B + \beta_3 C + \beta_4 AB + \beta_5 AC + \beta_6 BC + \beta_7 ABC
+$$
+
+In this fitted linear model, $\hat{y}_{\text{mean}}$ represents the predicted average freezing time. The intercept term $\beta_0$ corresponds to the average response when all factors are at their low level ($-1$). The coefficients $\beta_1$, $\beta_2$, and $\beta_3$ represent half of the main effects of factors A (initial temperature), B (sugar content), and C (cup material), respectively. The coefficients $\beta_4$, $\beta_5$, and $\beta_6$ represent half of the two-way interaction effects between these factors (AB, AC, and BC), while $\beta_7$ corresponds to half of the three-way interaction effect (ABC).
+
+```{r, fig.pos="H", fig.height=3, fig.width=6.5}
+#| warning: false
+#| echo: false
+#| message: false
+#| label: fig-halfN
+#| fig-cap: "Half-Normal Plot of Absolute Effects (Daniel Plot)"
+
+# Fit linear model with main and interaction effects
+freeze_lm <- lm(y_mean ~ A * B * C, data = matrix)
+
+# Define the estimated effects
+effects <- c(A = 23.125, B = 14.375, C = -15.625,
+             AB = -1.875, AC = -1.875, BC = 1.875, ABC = 3.125)
+
+# Create a data frame and compute half-normal scores
+effects_df <- data.frame(
+  Effect = names(effects),
+  Value = abs(effects)  # Use absolute value of effects
+) %>%
+  arrange(Value) %>%    # Sort effects by magnitude
+  mutate(
+    Rank = 1:n(),
+    HalfNormalScore = qnorm((Rank - 0.5) / n())  # Compute expected half-normal quantiles
+  )
+
+# Generate the half-normal (Daniel) plot
+ggplot(effects_df, aes(x = Value, y = HalfNormalScore, label = Effect)) +
+  geom_point(size = 1) +          # Plot each effect as a point
+  geom_text(vjust = -0.34, size = 3.1) +       # Add labels above the points
+  labs(x = "Absolute Effect", y = "Half-Normal Score") +
+  theme_minimal()                 # Clean minimal theme
+
+```
+\newpage
+
+
+# Conclusions
+
+The results of this $2^3$ factorial experiment demonstrate that all three main factors—A (initial water temperature), B (solution density), and C (container material)—have notable effects on freezing time. 
+
+- Factor A (Temperature) had the largest effect of +23.125 minutes, with a p-value of 0.000 and a 95% confidence interval of [18.801, 27.449]. This highly significant result indicates that hot water freezes much slower than room-temperature water.
+  
+- Factor B (Sugar content) showed an effect of +14.375 minutes, also statistically significant (p = 0.000, CI: [10.051, 18.699]), confirming that sugar delays the freezing process.
+
+- Factor C (Cup material) had a significant negative effect of -15.625 minutes (p = 0.000, CI: [-19.949, -11.301]), showing that water in plastic cups freezes faster than in glass cups.
+
+Regarding interaction effects:
+
+- AB, AC, and BC each had small estimated effects of ±1.875 minutes with p-values of 0.347, and their confidence intervals all include zero. These results suggest no significant interaction between those factor pairs.
+
+- ABC, the three-way interaction, had an estimated effect of +3.125 minutes (p = 0.134, CI: [-1.199, 7.449]), which is also statistically insignificant.
+
+These conclusions are further supported by the half-normal plot, where A, B, and C appear clearly far from the lower-left cluster, while the interaction effects are tightly grouped, indicating insignificance. Additionally, the rule of thumb that any effect more than 2 to 3 times its standard error is unlikely to result from random chance also supports these findings. For example, Factor A has a t-value of 12.333 (effect = 23.125, SE = 1.875), and Factors B and C have t-values of 7.667 and 8.333 respectively, all far exceeding this threshold. In contrast, the interaction terms have t-values close to or below 1.000, showing weak or no statistical evidence.
+
+The Mpemba effect refers to the observation that hot water may freeze faster than cold water. In this study, however, Factor A (initial water temperature) showed a highly significant positive effect of +23.125 minutes, meaning hot water froze considerably slower than cooler water. Given the statistical significance and direction of the effect, this experiment provides no evidence supporting the Mpemba effect. Moreover, even when accounting for the two additional factors (sugar and cup material), none of the interaction effects involving temperature—namely AB (-1.875), AC (-1.875), and ABC (+3.125)—were statistically significant. Therefore, we cannot conclude that the interactions between water temperature and these two factors play a meaningful role in producing the Mpemba effect.

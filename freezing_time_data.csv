@@ -1,0 +1,9 @@
+"experimental_condition","water_temp","sugar","cup_material","time_1","time_2"
+1,"RoomTemp","NoSugar","Plastic",135,135
+2,"RoomTemp","NoSugar","Glass",120,125
+3,"RoomTemp","Sugar","Plastic",150,155
+4,"RoomTemp","Sugar","Glass",140,135
+5,"Hot","NoSugar","Plastic",165,165
+6,"Hot","NoSugar","Glass",145,140
+7,"Hot","Sugar","Plastic",175,170
+8,"Hot","Sugar","Glass",155,165
