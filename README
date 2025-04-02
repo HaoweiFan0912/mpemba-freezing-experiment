@@ -10,13 +10,11 @@ This project investigates the Mpemba effect using a replicated full 2³ factoria
 
 ## Files Included
 
-| File                             | Description                                                                 |
-|----------------------------------|-----------------------------------------------------------------------------|
-| `Data.R`                         | Script to generate and save observed freezing time data into CSV format.   |
-| `freezing_time_data.csv`         | Experimental dataset saved by `Data.R`, containing observed freezing times.|
-| `Report.qmd`                     | Quarto source file including all code (data import, analysis, plotting) and explanations. |
-| `Report.pdf`                     | Final formatted report, including analysis results, tables, and figures.   |
-| `mpemba-freezing-experiment.Rproj` | RStudio project file for managing the environment.                          |
+- **`Data.R`**: Script to generate and save observed freezing time data into CSV format.  
+- **`freezing_time_data.csv`**: Experimental dataset saved by `Data.R`, containing observed freezing times.  
+- **`Report.qmd`**: Quarto source file including all code (data import, analysis, plotting) and explanations.  
+- **`Report.pdf`**: Final formatted report, including analysis results, tables, and figures.  
+- **`mpemba-freezing-experiment.Rproj`**: RStudio project file for managing the environment.
 
 ## License
 
