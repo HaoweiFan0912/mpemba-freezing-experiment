@@ -58,25 +58,26 @@ freeze <- read_csv(here::here("freezing_time_data.csv"))
 # Create a new dataframe named 'matrix' for the full factorial experiment
 matrix <- data.frame(
   Run = 1:8,
-  A = c(-1,-1,-1,-1, 1, 1, 1, 1),  # Factor A: water temperature (-1: RoomTemp, 1: Hot)
-  B = c(-1,-1, 1, 1,-1,-1, 1, 1),  # Factor B: solution density (-1: NoSugar, 1: Sugar solution)
-  C = c(-1, 1,-1, 1,-1, 1,-1, 1),  # Factor C: cup material (-1: Plastic, 1: Glass)
+  A = c(-1, -1, -1, -1, 1, 1, 1, 1), # Factor A: water temperature (-1: RoomTemp, 1: Hot)
+  B = c(-1, -1, 1, 1, -1, -1, 1, 1), # Factor B: solution density (-1: NoSugar, 1: Sugar solution)
+  C = c(-1, 1, -1, 1, -1, 1, -1, 1), # Factor C: cup material (-1: Plastic, 1: Glass)
   y_1 = freeze$time_1, # Freezing time (minutes) - Replication 1
-  y_2 = freeze$time_2  # Freezing time (minutes) - Replication 2
+  y_2 = freeze$time_2 # Freezing time (minutes) - Replication 2
 )
 
 # Calculate the average of the two replicates within each run
 matrix$y_mean <- (freeze$time_1 + freeze$time_2) / 2
 
 # Compute two-factor and three-factor interactions
-matrix$AB  <- matrix$A * matrix$B
-matrix$AC  <- matrix$A * matrix$C
-matrix$BC  <- matrix$B * matrix$C
+matrix$AB <- matrix$A * matrix$B
+matrix$AC <- matrix$A * matrix$C
+matrix$BC <- matrix$B * matrix$C
 matrix$ABC <- matrix$A * matrix$B * matrix$C
 
 # Rearrange columns to a conventional factorial design layout
 matrix <- matrix[, c("Run", "A", "B", "C", "AB", "AC", "BC", "ABC", "y_1", "y_2", "y_mean")]
 
+# Display the table
 kable(matrix)
 ```
 
@@ -107,22 +108,22 @@ where $t_{0.975,8}$ is the critical t-value at the 95% confidence level with 8 d
 #| label: tbl-effects
 #| tbl-cap: "Summary of All Main and Interaction Effects"
 
-# Step 1: Compute pooled variance (each run has 2 reps)
+# Compute pooled variance (each run has 2 reps)
 matrix$Var <- ((matrix$y_1 - matrix$y_2)^2) / 2
-s2_pooled <- mean(matrix$Var)          # Pooled variance estimate
-s_pooled <- sqrt(s2_pooled)            # Pooled standard deviation
+s2_pooled <- mean(matrix$Var) # Pooled variance estimate
+s_pooled <- sqrt(s2_pooled) # Pooled standard deviation
 
-# Step 2: Compute standard error of effect
-SE_effect <- s_pooled / 2              
+# Compute standard error of effect
+SE_effect <- s_pooled / 2
 
-# Step 3: Compute effects
-effects <- colSums(matrix[,c("A","B","C","AB","AC","BC","ABC")] * matrix$y_mean) / 4
+# Compute effects
+effects <- colSums(matrix[, c("A", "B", "C", "AB", "AC", "BC", "ABC")] * matrix$y_mean) / 4
 
-# Step 4: Compute t-values, p-values, and 95% confidence intervals
-df <- 8                                # Degrees of freedom for t distribution (2 reps × 8 runs)
-t_crit <- qt(0.975, df = df)           # t critical value for 95% CI
+# Compute t-values, p-values, and 95% confidence intervals
+df <- 8 # Degrees of freedom for t distribution (2 reps × 8 runs)
+t_crit <- qt(0.975, df = df) # t critical value for 95% CI
 
-# Step 5: Create and round final data frame
+# Create and round final data frame
 effects_df <- data.frame(
   Effect = names(effects),
   Estimate = round(effects, 3),
@@ -156,27 +157,28 @@ In this fitted linear model, $\hat{y}_{\text{mean}}$ represents the predicted av
 freeze_lm <- lm(y_mean ~ A * B * C, data = matrix)
 
 # Define the estimated effects
-effects <- c(A = 23.125, B = 14.375, C = -15.625,
-             AB = -1.875, AC = -1.875, BC = 1.875, ABC = 3.125)
+effects <- c(
+  A = 23.125, B = 14.375, C = -15.625,
+  AB = -1.875, AC = -1.875, BC = 1.875, ABC = 3.125
+)
 
 # Create a data frame and compute half-normal scores
 effects_df <- data.frame(
   Effect = names(effects),
-  Value = abs(effects)  # Use absolute value of effects
+  Value = abs(effects) # Use absolute value of effects
 ) %>%
-  arrange(Value) %>%    # Sort effects by magnitude
+  arrange(Value) %>% # Sort effects by magnitude
   mutate(
     Rank = 1:n(),
-    HalfNormalScore = qnorm((Rank - 0.5) / n())  # Compute expected half-normal quantiles
+    HalfNormalScore = qnorm((Rank - 0.5) / n()) # Compute expected half-normal quantiles
   )
 
 # Generate the half-normal (Daniel) plot
 ggplot(effects_df, aes(x = Value, y = HalfNormalScore, label = Effect)) +
-  geom_point(size = 1) +          # Plot each effect as a point
-  geom_text(vjust = -0.34, size = 3.1) +       # Add labels above the points
+  geom_point(size = 1) + # Plot each effect as a point
+  geom_text(vjust = -0.34, size = 3.1) + # Add labels above the points
   labs(x = "Absolute Effect", y = "Half-Normal Score") +
-  theme_minimal()                 # Clean minimal theme
-
+  theme_minimal() # Clean minimal theme
 ```
 \newpage
 
