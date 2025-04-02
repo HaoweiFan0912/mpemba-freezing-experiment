@@ -81,7 +81,7 @@ matrix <- matrix[, c("Run", "A", "B", "C", "AB", "AC", "BC", "ABC", "y_1", "y_2"
 kable(matrix)
 ```
 
-The factorial effects presented in @tbl-effects were computed from these observed data. First, the effect estimates were obtained by calculating the difference between average responses at the positive (+1) and negative (−1) levels of each factor or interaction:
+The factorial effects presented in @tbl-effects were computed from these observed data. First, the effect estimates were obtained by calculating the difference between average responses at the positive (+1) and negative (-1) levels of each factor or interaction:
 $\text{Effect} = \bar{y}_{+} - \bar{y}_{-}$
 where $\bar{y}_{+}$ and $\bar{y}_{-}$ represent the average response for the positive and negative levels of each factorial effect.
 
@@ -139,7 +139,7 @@ effects_df <- data.frame(
 kable(effects_df, row.names = FALSE)
 ```
 
-In addition, to visually observe the main and interaction effects of each factor, a linear model was fitted and a half-normal plot was generated (@fig-halfN)：
+In addition, to visually observe the main and interaction effects of each factor, a linear model was fitted and a half-normal plot was generated (@fig-halfN):
 $$
 \hat{y}_{\text{mean}} = \beta_0 + \beta_1 A + \beta_2 B + \beta_3 C + \beta_4 AB + \beta_5 AC + \beta_6 BC + \beta_7 ABC
 $$
