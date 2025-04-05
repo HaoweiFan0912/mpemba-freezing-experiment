@@ -11,6 +11,7 @@ toc-depth: 2
 number-sections: true
 toc: true           
 toc-title: "Table of Contents" 
+abstract: "This study investigates the Mpemba effect—the counterintuitive hypothesis that hot water may freeze faster than cold water—using a replicated 2³ full factorial design. The experiment explores three factors: initial water temperature (room temperature or hot), solution density (low or high), and container material (glass or plastic), with eight treatment combinations and two replicates each. Results show that all three main factors significantly affect freezing time, with hot water exhibiting the largest effect of +23.125 minutes. However, none of the interaction effects were statistically significant. These findings suggest that under controlled conditions, hot water freezes more slowly than cold water, providing no evidence in support of the Mpemba effect."
 ---
 
 \newpage
@@ -22,6 +23,8 @@ The Mpemba effect refers to the phenomenon in which hot water may freeze faster 
 The objective of this experiment is to investigate the scientific validity of the Mpemba effect by comparing differences in freezing times of water at various initial temperatures under constant spatial and temperature conditions. Additionally, two other potential influencing factors—solution density and container material—are included in the experiment to comprehensively examine their main effects on freezing time, as well as possible significant interaction effects among these factors. This allows exploration of whether such interactions are significant and whether they might contribute to the mechanisms underlying the Mpemba effect.
 
 This experiment employs a replicated $2^3$ full factorial experimental design. The three factors, each with two levels, are initial water temperature (room temperature around 17°C vs. hot water at approximately 45°C), solution density (pure water vs. sugar solution with 5 ml sucrose), and container material (glass vs. plastic cup). This results in eight experimental conditions, each replicated twice, totaling sixteen experiments. To minimize nuisance variables, the experiments were conducted in a uniform freezer environment at -17°C. Each trial simultaneously included two cups of water to minimize cross-interference between different temperature conditions. Observations began 1.5 hours after placing the water samples into the freezer, with checks conducted every 5 minutes. The criterion for freezing was the absence of liquid water movement when the cup was gently shaken, upon which the freezing time was recorded.
+
+This experiment took place at home, which led to some limitations. The differences between conditions were broad because of what was available. For example, “hot” and “room temperature” water were judged using household methods, not exact measurements. To change the solution density, I added or didn’t add 5 ml of sugar—no finer control was used. I measured freezing time by listening for the sound of moving water. This method is simple but not precise. 
 
 \newpage
 
@@ -53,7 +56,7 @@ freeze <- read_csv(here::here("freezing_time_data.csv"))
 #| message: false
 #| echo: false
 #| label: tbl-matrix
-#| tbl-cap: "Design Matrix and Observed Freezing Times"
+#| tbl-cap: "Design matrix and observed freezing times from the experiment. A, B, and C represent initial water temperature (+1 = hot), solution density (+1 = high density), and cup material (+1 = glass), with interaction terms (AB, AC, BC, ABC), and freezing times y_1, y_2, and their mean. The longest freezing time occurred with hot water, high density, and a plastic cup; the shortest with room-temperature water, low density, and a glass cup."
 
 # Create a new dataframe named 'matrix' for the full factorial experiment
 matrix <- data.frame(
@@ -106,7 +109,7 @@ where $t_{0.975,8}$ is the critical t-value at the 95% confidence level with 8 d
 #| message: false
 #| echo: false
 #| label: tbl-effects
-#| tbl-cap: "Summary of All Main and Interaction Effects"
+#| tbl-cap: "Summary of estimated main and interaction effects with standard errors, t-values, p-values, and 95% confidence intervals. Effects A, B, and C are statistically significant with p-values < 0.05. All interaction effects are small and not significant."
 
 # Compute pooled variance (each run has 2 reps)
 matrix$Var <- ((matrix$y_1 - matrix$y_2)^2) / 2
@@ -146,12 +149,12 @@ $$
 
 In this fitted linear model, $\hat{y}_{\text{mean}}$ represents the predicted average freezing time. The intercept term $\beta_0$ corresponds to the average response when all factors are at their low level ($-1$). The coefficients $\beta_1$, $\beta_2$, and $\beta_3$ represent half of the main effects of factors A (initial temperature), B (sugar content), and C (cup material), respectively. The coefficients $\beta_4$, $\beta_5$, and $\beta_6$ represent half of the two-way interaction effects between these factors (AB, AC, and BC), while $\beta_7$ corresponds to half of the three-way interaction effect (ABC).
 
-```{r, fig.pos="H", fig.height=3, fig.width=6.5}
+```{r, fig.pos="H", fig.height=2.1, fig.width=4}
 #| warning: false
 #| echo: false
 #| message: false
 #| label: fig-halfN
-#| fig-cap: "Half-Normal Plot of Absolute Effects (Daniel Plot)"
+#| fig-cap: "Half-normal plot of absolute effects from the freezing experiment. Points farther from the lower-left corner (A, B, C) represent larger and likely significant effects. Interaction effects are clustered near the origin, indicating insignificance."
 
 # Fit linear model with main and interaction effects
 freeze_lm <- lm(y_mean ~ A * B * C, data = matrix)
@@ -175,10 +178,29 @@ effects_df <- data.frame(
 
 # Generate the half-normal (Daniel) plot
 ggplot(effects_df, aes(x = Value, y = HalfNormalScore, label = Effect)) +
-  geom_point(size = 1) + # Plot each effect as a point
-  geom_text(vjust = -0.34, size = 3.1) + # Add labels above the points
+  geom_point(size = 1) + # Plot each effect as a small point
+
+  # Add text labels for all effects except "A"
+  geom_text(
+    data = subset(effects_df, Effect != "A"),
+    vjust = -0.5, size = 2.5
+  ) +
+
+  # Add the label for "A" with custom position
+  geom_text(
+    data = subset(effects_df, Effect == "A"),
+    vjust = 1.7, hjust = 1, size = 2.5
+  ) +
+
+  # Axis labels
   labs(x = "Absolute Effect", y = "Half-Normal Score") +
-  theme_minimal() # Clean minimal theme
+
+  # Minimal theme with custom axis title font size
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(size = 8),
+    axis.title.y = element_text(size = 8)
+  )
 ```
 \newpage
 

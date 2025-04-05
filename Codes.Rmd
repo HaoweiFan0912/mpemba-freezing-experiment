@@ -1,0 +1,145 @@
+This file contains the exact same code as in `Report.rmd`, but without any explanatory text.
+
+```{r}
+#| echo: false
+#| include: false
+#| warning: false
+#| message: false
+#### Workspace setup ####
+set.seed(912)
+# List of necessary packages
+packages <- c("tidyverse", "knitr", "FrF2")
+# Install missing packages
+missing_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+install.packages(missing_packages)
+# Load packages
+lapply(packages, library, character.only = TRUE)
+
+#### Read data ####
+freeze <- read_csv(here::here("freezing_time_data.csv"))
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: tbl-matrix
+#| tbl-cap: "Design matrix and observed freezing times from the experiment. A, B, and C represent initial water temperature (+1 = hot), solution density (+1 = high density), and cup material (+1 = glass), with interaction terms (AB, AC, BC, ABC), and freezing times y_1, y_2, and their mean. The longest freezing time occurred with hot water, high density, and a plastic cup; the shortest with room-temperature water, low density, and a glass cup."
+
+# Create a new dataframe named 'matrix' for the full factorial experiment
+matrix <- data.frame(
+  Run = 1:8,
+  A = c(-1, -1, -1, -1, 1, 1, 1, 1), # Factor A: water temperature (-1: RoomTemp, 1: Hot)
+  B = c(-1, -1, 1, 1, -1, -1, 1, 1), # Factor B: solution density (-1: NoSugar, 1: Sugar solution)
+  C = c(-1, 1, -1, 1, -1, 1, -1, 1), # Factor C: cup material (-1: Plastic, 1: Glass)
+  y_1 = freeze$time_1, # Freezing time (minutes) - Replication 1
+  y_2 = freeze$time_2 # Freezing time (minutes) - Replication 2
+)
+
+# Calculate the average of the two replicates within each run
+matrix$y_mean <- (freeze$time_1 + freeze$time_2) / 2
+
+# Compute two-factor and three-factor interactions
+matrix$AB <- matrix$A * matrix$B
+matrix$AC <- matrix$A * matrix$C
+matrix$BC <- matrix$B * matrix$C
+matrix$ABC <- matrix$A * matrix$B * matrix$C
+
+# Rearrange columns to a conventional factorial design layout
+matrix <- matrix[, c("Run", "A", "B", "C", "AB", "AC", "BC", "ABC", "y_1", "y_2", "y_mean")]
+
+# Display the table
+kable(matrix)
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: tbl-effects
+#| tbl-cap: "Summary of estimated main and interaction effects with standard errors, t-values, p-values, and 95% confidence intervals. Effects A, B, and C are statistically significant with p-values < 0.05. All interaction effects are small and not significant."
+
+# Compute pooled variance (each run has 2 reps)
+matrix$Var <- ((matrix$y_1 - matrix$y_2)^2) / 2
+s2_pooled <- mean(matrix$Var) # Pooled variance estimate
+s_pooled <- sqrt(s2_pooled) # Pooled standard deviation
+
+# Compute standard error of effect
+SE_effect <- s_pooled / 2
+
+# Compute effects
+effects <- colSums(matrix[, c("A", "B", "C", "AB", "AC", "BC", "ABC")] * matrix$y_mean) / 4
+
+# Compute t-values, p-values, and 95% confidence intervals
+df <- 8 # Degrees of freedom for t distribution (2 reps × 8 runs)
+t_crit <- qt(0.975, df = df) # t critical value for 95% CI
+
+# Create and round final data frame
+effects_df <- data.frame(
+  Effect = names(effects),
+  Estimate = round(effects, 3),
+  SE = round(rep(SE_effect, length(effects)), 3),
+  t_value = round(effects / SE_effect, 3),
+  p_value = round(2 * pt(-abs(effects / SE_effect), df = df), 3),
+  CI_lower = round(effects - t_crit * SE_effect, 3),
+  CI_upper = round(effects + t_crit * SE_effect, 3)
+)
+
+
+# Display the results
+kable(effects_df, row.names = FALSE)
+```
+
+```{r, fig.pos="H", fig.height=2.1, fig.width=4}
+#| warning: false
+#| echo: false
+#| message: false
+#| label: fig-halfN
+#| fig-cap: "Half-normal plot of absolute effects from the freezing experiment. Points farther from the lower-left corner (A, B, C) represent larger and likely significant effects. Interaction effects are clustered near the origin, indicating insignificance."
+
+# Fit linear model with main and interaction effects
+freeze_lm <- lm(y_mean ~ A * B * C, data = matrix)
+
+# Define the estimated effects
+effects <- c(
+  A = 23.125, B = 14.375, C = -15.625,
+  AB = -1.875, AC = -1.875, BC = 1.875, ABC = 3.125
+)
+
+# Create a data frame and compute half-normal scores
+effects_df <- data.frame(
+  Effect = names(effects),
+  Value = abs(effects) # Use absolute value of effects
+) %>%
+  arrange(Value) %>% # Sort effects by magnitude
+  mutate(
+    Rank = 1:n(),
+    HalfNormalScore = qnorm((Rank - 0.5) / n()) # Compute expected half-normal quantiles
+  )
+
+# Generate the half-normal (Daniel) plot
+ggplot(effects_df, aes(x = Value, y = HalfNormalScore, label = Effect)) +
+  geom_point(size = 1) + # Plot each effect as a small point
+
+  # Add text labels for all effects except "A"
+  geom_text(
+    data = subset(effects_df, Effect != "A"),
+    vjust = -0.5, size = 2.5
+  ) +
+
+  # Add the label for "A" with custom position
+  geom_text(
+    data = subset(effects_df, Effect == "A"),
+    vjust = 1.7, hjust = 1, size = 2.5
+  ) +
+
+  # Axis labels
+  labs(x = "Absolute Effect", y = "Half-Normal Score") +
+
+  # Minimal theme with custom axis title font size
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(size = 8),
+    axis.title.y = element_text(size = 8)
+  )
+```
